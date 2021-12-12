@@ -5,13 +5,12 @@ services:
         build:
             context: .docker/dev/php
             args:
-                - USER=app
-                - USERID=501
+                - "USER=${USER:-app}"
+                - "USERID=${USERID:-1000}"
         restart: unless-stopped
         depends_on:
             - database
             - queue
-            - elastic
         volumes:
             - ./:/app
             - ./var/log/supervisor:/var/log/supervisor
