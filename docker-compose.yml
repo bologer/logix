@@ -1,0 +1,58 @@
+version: '3.9'
+services:
+    php:
+        container_name: logix_app
+        build:
+            context: .docker/dev/php
+            args:
+                - USER=app
+                - USERID=501
+        restart: unless-stopped
+        depends_on:
+            - database
+            - queue
+            - elastic
+        volumes:
+            - ./:/app
+            - ./var/log/supervisor:/var/log/supervisor
+
+    database:
+        container_name: logix_db
+        build:
+            context: .docker/dev/postgres
+        restart: unless-stopped
+        environment:
+            - POSTGRES_DB=${DATABASE_NAME}
+            - POSTGRES_USER=${DATABASE_USER}
+            - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+        volumes:
+            - database:/var/lib/postgresql/data
+
+    nginx:
+        container_name: logix_nginx
+        build:
+            context: .docker/dev/nginx
+        restart: unless-stopped
+        volumes:
+            - ./:/app
+            - ./var/log/nginx:/var/log/nginx
+        depends_on:
+            - php
+        ports:
+            - "${APP_PORT:-80}:80"
+
+    queue:
+        container_name: logix_queue
+        build:
+            context: .docker/dev/rabbitmq
+        restart: unless-stopped
+        environment:
+            - RABBITMQ_DEFAULT_USER=$QUEUE_USERNAME
+            - RABBITMQ_DEFAULT_PASS=$QUEUE_PASSWORD
+            - RABBITMQ_DEFAULT_VHOST=$QUEUE_VHOST
+        volumes:
+            - rabbitmq:/var/lib/rabbitmq
+
+volumes:
+    database:
+    rabbitmq:
